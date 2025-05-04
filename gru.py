@@ -1,0 +1,34 @@
+import tensorflow as tf
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import MinMaxScaler
+data = pd.read_csv('weather.csv')
+dataset = data.iloc[:, 1:2].values
+
+sc = MinMaxScaler(feature_range=(0, 1))
+scaled_data = sc.fit_transform(dataset)
+
+x_train = []
+y_train = []
+for i in range(60, len(scaled_data)):
+    x_train.append(scaled_data[i-60:i, 0])
+    y_train.append(scaled_data[i, 0])
+
+x_train, y_train = np.array(x_train), np.array(y_train)
+x_train = x_train.reshape(x_train.shape[0], x_train.shape[1], 1)
+
+model = tf.keras.models.Sequential()
+model.add(tf.keras.layers.GRU(units=60, activation='relu', return_sequences=True, input_shape=(x_train.shape[1], 1)))
+model.add(tf.keras.layers.Dropout(0.2))
+model.add(tf.keras.layers.GRU(units=60, activation='relu', return_sequences=True))
+model.add(tf.keras.layers.Dropout(0.2))
+model.add(tf.keras.layers.GRU(units=80, activation='relu', return_sequences=True))
+model.add(tf.keras.layers.Dropout(0.2))
+model.add(tf.keras.layers.GRU(units=120, activation='relu', return_sequences=True))
+model.add(tf.keras.layers.Dropout(0.2))
+model.add(tf.keras.layers.GRU(units=60, activation='relu'))
+model.add(tf.keras.layers.Dropout(0.2))
+model.add(tf.keras.layers.Dense(units=1))
+model.compile(optimizer='adam', loss='mean_squared_error')
+model.fit(x_train, y_train, epochs=50, batch_size=32)
